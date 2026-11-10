@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Component A · RB receiving opportunity</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --page: light-dark(#f5f7f6, #111916);
+      --surface: light-dark(#fff, #19251f);
+      --ink: light-dark(#15261e, #edf6f1);
+      --muted: light-dark(#506659, #acc2b4);
+      --border: light-dark(#dce6df, #35493d);
+      --option: light-dark(#177854, #58d2a0);
+      --separation: light-dark(#3b6793, #87b7eb);
+      --track: light-dark(#eaf0ec, #2a3d32);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--page);
+           font: 15px/1.45 system-ui, sans-serif; }
+    main { max-width: 1180px; margin: auto; padding: clamp(16px, 4vw, 48px); }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: clamp(2rem, 6vw, 3.25rem); line-height: 1.06; letter-spacing: -.045em; }
+    h2 { font-size: 1.25rem; }
+    .eyebrow { color: var(--option); font-weight: 700; text-transform: uppercase;
+               letter-spacing: .13em; font-size: .78rem; margin-bottom: 8px; }
+    .sub { color: var(--muted); font-size: .9rem; margin-top: 6px; }
+    .grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+            gap: 16px; margin-top: 24px; align-items: start; }
+    section { background: var(--surface); border: 1px solid var(--border);
+              border-radius: 14px; padding: clamp(12px, 2.2vw, 24px); min-width: 0; }
+    .controls, .pager { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 12px; }
+    .controls { margin: 16px 0; }
+    label { display: grid; gap: 4px; color: var(--muted); font-size: .85rem; }
+    select, button { font: inherit; color: var(--ink); background: var(--surface);
+                     border: 1px solid var(--border); border-radius: 6px; padding: 7px; }
+    select { width: 100%; min-width: 0; }
+    button:not(:disabled) { cursor: pointer; }
+    button:disabled { opacity: .45; }
+    .comparison label { flex: 1 1 145px; min-width: 0; }
+    table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 8px 5px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-size: .8rem; font-weight: 600; }
+    td:first-child, td:nth-child(3) { white-space: nowrap; color: var(--muted); }
+    td:last-child { min-width: 95px; width: 34%; }
+    .score { display: flex; gap: 8px; align-items: center; }
+    .bar { display: block; height: 8px; background: var(--track);
+           border-radius: 999px; flex: 1; overflow: hidden; }
+    .fill { display: block; height: 100%; border-radius: inherit; background: var(--option); }
+    .sep .fill { background: var(--separation); }
+    .pager { margin-top: 12px; justify-content: space-between; align-items: center; }
+    .pager .sub { margin: 0; }
+    .comparison-result { display: grid; gap: 14px; }
+    .play-example { margin-top: 16px; }
+    .play-example img { display: block; width: 100%; max-width: 900px; margin: 12px auto; }
+    .play-example img[hidden] { display: none; }
+    .measure { display: grid; gap: 4px; margin-top: 10px; }
+    .measure-label { display: flex; justify-content: space-between; gap: 6px;
+                     font-size: .85rem; font-variant-numeric: tabular-nums; }
+    @media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 365px) { .score .bar { display: none; } td:last-child { min-width: auto; width: auto; } }
+  </style>
+</head>
+<body>
+<noscript>Open this dashboard in a browser with JavaScript enabled to use the rankings and comparisons.</noscript>
+<main>
+  <header>
+    <p class="eyebrow" id="model-name">Component A v2 · NFL tracking</p>
+    <h1>RB receiving opportunity</h1>
+    <p class="sub" id="sample"></p>
+  </header>
+  <div class="grid">
+    <section aria-labelledby="rank-title">
+      <h2 id="rank-title">Running back leaderboard</h2>
+      <p class="sub" id="rank-method">Mean value of each route’s best three-frame window, in expected points.</p>
+      <div class="controls">
+        <label>Minimum scored routes
+          <select id="minimum">
+            <option value="100">100 routes</option>
+            <option value="50" selected>50 routes</option>
+            <option value="1">All receivers</option>
+          </select>
+        </label>
+      </div>
+      <table aria-label="Receivers ranked by mean peak pass-option value">
+        <thead><tr><th scope="col">Rank</th><th scope="col">Receiver</th>
+          <th scope="col">Routes</th><th scope="col">Value</th></tr></thead>
+        <tbody id="ranking"></tbody>
+      </table>
+      <div class="pager">
+        <p class="sub" id="range" aria-live="polite"></p>
+        <div><button id="prev" type="button">Previous</button>
+          <button id="next" type="button">Next</button></div>
+      </div>
+    </section>
+    <section class="comparison" aria-labelledby="compare-title">
+      <h2 id="compare-title">Compare two running backs</h2>
+      <p class="sub" id="comparison-method">Scores describe passing options if targeted.</p>
+      <div class="controls">
+        <label>Running back 1<select id="first"></select></label>
+        <label>Running back 2<select id="second"></select></label>
+      </div>
+      <div id="comparison" class="comparison-result" aria-live="polite"></div>
+    </section>
+  </div>
+  <section class="play-example" aria-labelledby="example-title" id="play-example" hidden>
+    <h2 id="example-title">Easy catch, difficult first down</h2>
+    <img id="ty_johnson_outlet" alt="Ty Johnson’s catch and conversion forecasts before a four-yard gain on third-and-seven" hidden>
+    <img id="rb_leaderboard" alt="Top 10 running backs with at least 50 scored routes" hidden>
+  </section>
+</main>
+<template id="rank-row">
+  <tr><td></td><td></td><td></td><td><div class="score">
+    <span class="bar" aria-hidden="true"><span class="fill"></span></span><span></span>
+  </div></td></tr>
+</template>
+<template id="player-panel">
+  <div class="player">
+    <h3></h3><p class="sub"></p>
+    <div class="measure">
+      <div class="measure-label">Mean peak value <span data-value="score"></span></div>
+      <span class="bar" aria-hidden="true"><span class="fill" data-bar="score"></span></span>
+    </div>
+    <div class="measure sep">
+      <div class="measure-label">Mean peak separation <span data-value="separation"></span></div>
+      <span class="bar" aria-hidden="true"><span class="fill" data-bar="separation"></span></span>
+    </div>
+  </div>
+</template>
+<script id="players" type="application/json">%%DATA%%</script>
+<script>
+  const el = id => document.getElementById(id);
+  const {players, charts} = JSON.parse(el("players").textContent);
+  const number = new Intl.NumberFormat();
+  const percent = new Intl.NumberFormat(undefined, {style: "percent", maximumFractionDigits: 0});
+  const perPage = 12;
+  let page = 0;
+
+  for (const [name, encoded] of Object.entries(charts)) {
+    const image = el(name);
+    image.src = "data:image/png;base64," + encoded;
+    image.hidden = false;
+    el("play-example").hidden = false;
+  }
+  el("sample").textContent = `${number.format(players.reduce((sum, row) => sum + row.routes, 0))} scored routes · ${number.format(players.length)} running backs · 2021 Weeks 1–8`;
+  const qualifying = () => players.filter(row => row.routes >= Number(el("minimum").value));
+  const maxOf = (rows, key) => Math.max(0.001, ...rows.map(row => row[key]));
+  const fill = (node, value, max) => { node.style.width = `${100 * value / max}%`; };
+
+  function renderRanking() {
+    const ranked = qualifying();
+    const start = page * perPage;
+    const end = Math.min(start + perPage, ranked.length);
+    const scale = maxOf(players, "score");
+    const rows = ranked.slice(start, end).map((player, index) => {
+      const row = el("rank-row").content.firstElementChild.cloneNode(true);
+      row.cells[0].textContent = start + index + 1;
+      row.cells[1].textContent = player.name;
+      row.cells[2].textContent = number.format(player.routes);
+      row.querySelector(".score > span:last-child").textContent = player.score.toFixed(3);
+      fill(row.querySelector(".fill"), player.score, scale);
+      return row;
+    });
+    el("ranking").replaceChildren(...rows);
+    el("range").textContent = ranked.length
+      ? `${start + 1}–${end} of ${ranked.length} receivers`
+      : "No receivers meet this route minimum.";
+    el("prev").disabled = page === 0;
+    el("next").disabled = end >= ranked.length;
+  }
+
+  function renderComparison() {
+    const group = players;
+    const selected = new Set([el("first").value, el("second").value]);
+    const rows = [...selected].map(id => group.find(player => String(player.id) === id));
+    const panels = rows.map(player => {
+      const panel = el("player-panel").content.firstElementChild.cloneNode(true);
+      panel.querySelector("h3").textContent = player.name;
+      const routeInfo = `${number.format(player.routes)} routes · Positive window on ${percent.format(player.positive)}`;
+      panel.querySelector("p").textContent = `${routeInfo} · If targeted: ${percent.format(player.first_down)} first down or TD · ${percent.format(player.touchdown)} TD`;
+      panel.querySelector('[data-value="score"]').textContent = `${player.score.toFixed(3)} pts`;
+      panel.querySelector('[data-value="separation"]').textContent = `${player.separation.toFixed(2)} yd`;
+      for (const key of ["score", "separation"]) {
+        fill(panel.querySelector(`[data-bar="${key}"]`), player[key], maxOf(group, key));
+      }
+      return panel;
+    });
+    el("comparison").replaceChildren(...panels);
+  }
+
+  function initialize() {
+    const group = players;
+    const names = [...group].sort((a, b) => a.name.localeCompare(b.name));
+    const leaders = qualifying();
+    const defaults = leaders.length >= 2 ? leaders : group;
+    for (const [index, field] of ["first", "second"].entries()) {
+      const select = el(field);
+      select.replaceChildren(...names.map(row => new Option(row.name, row.id)));
+      select.value = String(defaults[Math.min(index, defaults.length - 1)].id);
+    }
+    page = 0;
+    renderRanking();
+    renderComparison();
+  }
+
+  el("minimum").addEventListener("change", () => { page = 0; renderRanking(); });
+  el("prev").addEventListener("click", () => { page--; renderRanking(); });
+  el("next").addEventListener("click", () => { page++; renderRanking(); });
+  for (const field of ["first", "second"]) el(field).addEventListener("change", renderComparison);
+  initialize();
+</script>
+</body>
+</html>
