@@ -1,4 +1,4 @@
-# Component A · RB receiving opportunity
+# RB receiving opportunity
 
 **If the quarterback throws to this running back now, how valuable would that pass be?** Component A scores the passing windows on each RB route, including routes where the ball went elsewhere. The leaderboard averages the best modeled window per route. It describes receiving opportunity in the situations each back played.
 
